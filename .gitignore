@@ -1,0 +1,9 @@
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+*.log
+data/checks/
+data/reproduced*/
+data/example/
+changing_exposure.csv

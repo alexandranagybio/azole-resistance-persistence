@@ -1,0 +1,4 @@
+"cost","persisted","total_runs","persistence_percent","fixed","mean_final_frequency"
+"0%",20,20,100,0,0.5021
+"1%",19,20,95,0,0.414
+"5%",18,20,90,0,0.1343

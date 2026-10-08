@@ -1,0 +1,116 @@
+// Educational model of azole-resistance persistence in A. fumigatus.
+//
+// m1 represents the complete cyp51A TR34/L98H resistance genotype:
+// a 34-bp promoter tandem repeat plus the L98H substitution.
+// One inherited marker represents both changes;
+// their separate molecular origins are not simulated.
+//
+// Reference: Mellado et al. (2007), doi:10.1128/AAC.01092-06
+//
+// Assumptions:
+// - 500 clonal haploid individuals; constant population size.
+// - Resistance starts in 50 individuals (frequency 0.1).
+// - No new mutations, migration, or recombination.
+// - Selection coefficient +0.05 during exposure.
+// - Selection coefficient -COST after EXPOSURE_END.
+// - COST defaults to 0.0: no cost after withdrawal.
+// - EXPOSURE_END defaults to generation 50.
+// - Follow-up lasts 450 cycles after withdrawal.
+// - Selection coefficients are illustrative, not measured estimates.
+// - Each generation is a reproductive cycle, not a calendar day.
+// - Chromosome length and marker position are abstract.
+//
+// This script supports EXPOSURE_END values from 2 to 550,
+// giving final generations no later than 1000.
+// Supply a unique OUTFILE for each run to preserve its CSV.
+
+initialize() {
+    if (!exists("OUTFILE"))
+        defineConstant("OUTFILE", "changing_exposure.csv");
+
+    if (!exists("COST"))
+        defineConstant("COST", 0.0);
+
+    if (!exists("EXPOSURE_END"))
+        defineConstant("EXPOSURE_END", 50);
+
+    if ((COST < 0.0) | (COST >= 1.0))
+        stop("COST must be at least 0 and less than 1.");
+
+    if ((EXPOSURE_END < 2) | (EXPOSURE_END > 550) |
+        (EXPOSURE_END != asInteger(EXPOSURE_END)))
+        stop("EXPOSURE_END must be an integer from 2 to 550.");
+
+    defineConstant("END_GEN", EXPOSURE_END + 450);
+
+    initializeMutationType("m1", 1.0, "f", 0.05);
+    m1.convertToSubstitution = F;
+
+    initializeGenomicElementType("g1", m1, 1.0);
+
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    sim.addSubpop("p1", 500);
+    p1.setCloningRate(1.0);
+}
+
+// Introduce resistance after the first generation's reproduction.
+1 late() {
+    carriers = sample(p1.individuals, 50);
+    allele = carriers[0].haplosomes.addNewDrawnMutation(m1, 50000);
+    carriers[1:49].haplosomes.addMutations(allele);
+
+    freq = sim.mutationFrequencies(p1, allele);
+
+    catn("Starting frequency: " + freq);
+    catn("Exposure ends at generation: " + EXPOSURE_END);
+    catn("Simulation ends at generation: " + END_GEN);
+
+    writeFile(OUTFILE,
+        "generation,frequency");
+
+    writeFile(OUTFILE,
+        "1," + freq, append=T);
+}
+
+// Change selection after reproduction at EXPOSURE_END.
+// The new coefficient affects reproduction in the next cycle.
+1:1000 late() {
+    if (sim.cycle == EXPOSURE_END) {
+        muts = sim.mutationsOfType(m1);
+
+        if (size(muts) > 0)
+            muts.setSelectionCoeff(-COST);
+
+        catn("Exposure ends at generation " + sim.cycle +
+            ": selection coefficient is now " + (-COST));
+    }
+}
+
+// Record resistance frequency each generation.
+2:1000 late() {
+    muts = sim.mutationsOfType(m1);
+
+    if (size(muts) == 0)
+        freq = 0.0;
+    else
+        freq = sim.mutationFrequencies(p1, muts);
+
+    catn("Generation " + sim.cycle + ": " + freq);
+
+    writeFile(OUTFILE,
+        sim.cycle + "," + freq, append=T);
+}
+
+// Stop after recording the final generation.
+1:1000 late() {
+    if (sim.cycle == END_GEN) {
+        catn("Population size: " + p1.individualCount);
+        sim.simulationFinished();
+    }
+}

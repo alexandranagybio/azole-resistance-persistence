@@ -1,0 +1,4 @@
+"withdrawal_generation","mean_frequency_at_withdrawal","total_runs","lost","segregating","fixed","persistence_percent","mean_final_frequency"
+25,0.2216,20,11,8,1,45,0.2322
+50,0.4977,20,5,10,5,75,0.4907
+100,0.8608,20,1,5,14,95,0.8808

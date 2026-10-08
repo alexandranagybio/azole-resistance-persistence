@@ -1,0 +1,9 @@
+SLiM
+SLiM version 5.2, built Oct  7 2026 11:50:55
+Git commit SHA-1: f11de0d781fc46d984731b8fc7b7c31565c08c3d
+
+R
+Rscript (R) version 4.4.3 (2025-02-28)
+
+Platform
+Linux x86_64

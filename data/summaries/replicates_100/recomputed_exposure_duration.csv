@@ -1,0 +1,4 @@
+"withdrawal_generation","mean_frequency_at_withdrawal","total_runs","lost","segregating","fixed","persistence_percent","mean_final_frequency","persisted","persistence_ci_lower_percent","persistence_ci_upper_percent"
+25,0.25606,100,56,41,3,44,0.19462,44,34.6720266301608,53.771895348323
+50,0.5112,100,24,52,24,76,0.50222,76,66.7676636501855,83.3086744430512
+100,0.8677,100,7,16,77,93,0.8646,93,86.2504852609265,96.5680738932727

@@ -1,0 +1,4 @@
+"cost","total_runs","lost","segregating","fixed","persistence_percent","mean_final_frequency","persisted","persistence_ci_lower_percent","persistence_ci_upper_percent"
+"0%",100,2,98,0,98,0.49408,98,92.9988209271456,99.4498032449838
+"1%",100,3,97,0,97,0.39668,97,91.5480635709472,98.9745475975961
+"5%",100,12,88,0,88,0.09978,88,80.1879005732886,93.0005935629805
