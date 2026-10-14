@@ -1,0 +1,136 @@
+// Two-patch model with separate TR34 and L98H markers.
+//
+// m1 represents presence of the promoter TR34.
+// m2 represents presence of the coding L98H substitution.
+// Marker positions are abstract, not reference-genome coordinates.
+// The TR34 marker does not literally insert 34 bases.
+//
+// Both markers initially occur in the same 50 individuals in p1.
+// Reproduction is clonal, with no new mutations or recombination.
+// Both markers are intrinsically neutral; fitnessEffect() applies
+// the resistance effect once to individuals carrying both.
+//
+// Single-marker genotypes are assigned fitness 1.0 as an illustrative
+// assumption, not an experimentally measured fitness estimate.
+// Such genotypes cannot arise in this initial clonal experiment.
+//
+// Two patches of 500 haploids each.
+// Only p1 is exposed; withdrawal follows reproduction at EXPOSURE_END.
+// COST applies to double carriers whenever their patch is unexposed.
+// Follow-up lasts 450 cycles after withdrawal.
+
+function (float) genotypeFrequencies(o<Subpopulation>$ patch) {
+    inds = patch.individuals;
+    tr = inds.countOfMutationsOfType(m1) > 0;
+    l98 = inds.countOfMutationsOfType(m2) > 0;
+
+    return c(
+        mean(!tr & !l98),
+        mean(tr & !l98),
+        mean(!tr & l98),
+        mean(tr & l98)
+    );
+}
+
+initialize() {
+    if (!exists("OUTFILE"))
+        defineConstant("OUTFILE", "separate_markers.csv");
+    if (!exists("COST"))
+        defineConstant("COST", 0.0);
+    if (!exists("EXPOSURE_END"))
+        defineConstant("EXPOSURE_END", 50);
+    if (!exists("MIGRATION_RATE"))
+        defineConstant("MIGRATION_RATE", 0.0);
+
+    if ((COST < 0.0) | (COST >= 1.0))
+        stop("COST must be at least 0 and less than 1.");
+
+    if ((MIGRATION_RATE < 0.0) | (MIGRATION_RATE > 1.0))
+        stop("MIGRATION_RATE must be between 0 and 1.");
+
+    if ((EXPOSURE_END < 2) | (EXPOSURE_END > 550) |
+        (EXPOSURE_END != asInteger(EXPOSURE_END)))
+        stop("EXPOSURE_END must be an integer from 2 to 550.");
+
+    defineConstant("END_GEN", EXPOSURE_END + 450);
+
+    initializeMutationType("m1", 1.0, "f", 0.0);
+    initializeMutationType("m2", 1.0, "f", 0.0);
+    m1.convertToSubstitution = F;
+    m2.convertToSubstitution = F;
+
+    initializeGenomicElementType("g1", c(m1, m2), c(1.0, 1.0));
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    // Stored exposure state is changed explicitly at withdrawal.
+    sim.setValue("p1_exposed", T);
+
+    sim.addSubpop("p1", 500);
+    sim.addSubpop("p2", 500);
+
+    p1.setCloningRate(1.0);
+    p2.setCloningRate(1.0);
+    p1.setMigrationRates(p2, MIGRATION_RATE);
+    p2.setMigrationRates(p1, MIGRATION_RATE);
+}
+
+fitnessEffect() {
+    tr = individual.countOfMutationsOfType(m1) > 0;
+    l98 = individual.countOfMutationsOfType(m2) > 0;
+
+    if (!(tr & l98))
+        return 1.0;
+
+    if ((individual.subpopulation.id == 1) &
+        sim.getValue("p1_exposed"))
+        return 1.05;
+
+    return 1.0 - COST;
+}
+
+1 late() {
+    carriers = sample(p1.individuals, 50);
+
+    tr = carriers[0].haplosomes.addNewDrawnMutation(m1, 50000);
+    l98 = carriers[0].haplosomes.addNewDrawnMutation(m2, 50100);
+
+    carriers[1:49].haplosomes.addMutations(c(tr, l98));
+
+    writeFile(OUTFILE,
+        "generation,wt_p1,tr34_only_p1,l98h_only_p1,double_p1," +
+        "wt_p2,tr34_only_p2,l98h_only_p2,double_p2,frequency_total");
+
+    catn("Two markers introduced into the same 50 p1 individuals.");
+    catn("Migration rate: " + MIGRATION_RATE);
+    catn("Exposure ends at cycle: " + EXPOSURE_END);
+}
+
+1:1000 late() {
+    if (sim.cycle == EXPOSURE_END) {
+        sim.setValue("p1_exposed", F);
+        catn("Exposure withdrawn at cycle " + sim.cycle);
+    }
+}
+
+1:1000 late() {
+    a = genotypeFrequencies(p1);
+    b = genotypeFrequencies(p2);
+    total = (a[3] + b[3]) / 2.0;
+
+    writeFile(OUTFILE,
+        paste(c(sim.cycle, a, b, total), sep=","),
+        append=T);
+
+    if (sim.cycle == END_GEN) {
+        catn("Final double-carrier frequencies: p1=" +
+            a[3] + "; p2=" + b[3]);
+        catn("Final population sizes: " +
+            p1.individualCount + ", " + p2.individualCount);
+        sim.simulationFinished();
+    }
+}
