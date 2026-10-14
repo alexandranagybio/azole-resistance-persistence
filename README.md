@@ -1,305 +1,189 @@
 # Azole-resistance persistence in Aspergillus fumigatus
 
-An educational SLiM 5.2 project exploring how selection, genetic drift,
-and exposure duration affect the persistence of an existing resistance
-genotype after azole withdrawal.
+An educational population-genetics project built with **SLiM 5.2 and R**,
+exploring how selection, genetic drift, environmental dispersal, and
+two-marker inheritance affect an existing resistance genotype.
 
-## Clonal baseline model
+The project develops from a clonal resistance-persistence model into
+two environmental patches, separate TR34 and L98H markers, and a neutral
+model with optional two-parent inheritance.
 
-The population contains 500 clonal haploid individuals, initially including
-50 resistant individuals (resistance frequency 0.1).
+**Current scope:** selection and dispersal are explored in clonal models;
+recombination is explored separately under neutrality. These processes
+have not yet been combined into a complete fungal life-cycle model.
 
-One inherited mutation marker represents the complete cyp51A TR34/L98H
-genotype. The promoter tandem repeat and amino-acid substitution are not
-modelled separately. The chromosome length and marker position are abstract.
+## Featured experiment: separating linked markers
 
-During exposure, the resistance marker has an illustrative selection
-coefficient of +0.05. Selection changes to -COST at withdrawal.
+How does the frequency of two-parent reproduction affect the appearance
+of single-marker genotypes when both markers initially occur together?
 
-Resistance is introduced at the end of generation 1. Selection changes at the
-end of the withdrawal generation, affecting reproduction from the following
-cycle onward.
+![Single-marker appearance across hypothetical two-parent fractions](figures/neutral_two_markers_100/single_marker_appearance.png)
 
-- Zero cost is the baseline.
-- Costs of 1% and 5% are hypothetical sensitivity scenarios.
-- There are no new mutations, migration, or recombination.
-- Population size remains constant.
-- A model generation is a reproductive cycle, not a calendar day.
+In 100 runs per scenario, single-marker genotypes appeared in **0, 33,
+71 and 100 runs** as the hypothetical two-parent fraction increased
+from 0% to 1%, 10% and 100%.
 
-The model examines persistence of standing resistance; it does not simulate
-the origin of resistance or predict resistance prevalence in natural populations.
+All genotypes had equal fitness. The conditional recombination fraction
+was held at 0.00192, based on a cross-specific literature estimate.
+Two-parent fractions are sensitivity scenarios, not measured natural
+sexual frequencies. Appearance at least once does not imply persistence
+to the endpoint.
 
-## Biological motivation
+[Explore the neutral model, results and figures](docs/neutral_two_markers.md)
 
-The 2024 study *Variability in competitive fitness among environmental and
-clinical azole-resistant Aspergillus fumigatus isolates* reported no detectable
-fitness cost for engineered cyp51A mutants under its tested conditions.
+## Models and questions
 
-Competitive fitness varied among the sampled resistant isolates. The study’s
-genetic manipulation experiments indicated that fitness costs were not directly
-attributable to the cyp51A resistance mutations alone. We therefore use zero cost
-as an educational baseline and explore hypothetical positive costs as sensitivity
-scenarios.
+| Component | Question | Implementation and checks |
+|---|---|---|
+| Clonal persistence: scripts 07–09 | How do exposure duration and post-withdrawal cost affect persistence? | 500 haploids; 100 runs per scenario |
+| Environmental dispersal: script 10 | Can resistance reach and persist in an unexposed patch? | Two patches; 300 validated trajectories |
+| Separate markers: script 11 | Does splitting TR34 and L98H preserve clonal behaviour? | 300 trajectories matched the combined-marker model |
+| Inheritance checks: scripts 12–13 | Does the implementation transmit and recombine markers as intended? | Controlled crosses and a 100,000-offspring stochastic check |
+| Neutral inheritance: script 14 | How does two-parent reproduction affect marker separation? | 400 validated trajectories across four hypothetical fractions |
 
-These findings do not establish that resistance is cost-free in every genetic
-background or environment.
+TR34 and L98H are represented as inherited markers. The models do not
+literally insert promoter sequence or substitute nucleotides.
 
-References:
+## Selected findings
 
-- TR34/L98H resistance mechanism:
-  https://doi.org/10.1128/AAC.01092-06
-- Competitive fitness study:
-  https://doi.org/10.1128/mbio.00263-24
-- Population structure and recombination: Lofgren et al. (2022),
-  *The pan-genome of Aspergillus fumigatus provides a high-resolution view of its
-  population structure revealing high levels of lineage-specific diversity driven
-  by recombination*. https://doi.org/10.1371/journal.pbio.3001890
+- **Persistence after withdrawal:** with withdrawal at cycle 50,
+  resistance remained at cycle 500 in 76%, 14% and 0% of runs under
+  illustrative post-withdrawal costs of 0%, 1% and 5%, respectively.
+- **Environmental dispersal:** resistance reached the initially
+  susceptible patch in 99/100 runs at 0.1% dispersal and 100/100 runs
+  at 1% dispersal. Arrival did not guarantee endpoint persistence.
+- **Marker inheritance:** separating the markers preserved the clonal
+  model's trajectories. Enabling recombinant inheritance allowed
+  single-marker genotypes to appear without new mutation.
 
-## Clonal baseline and recombination
+These are simulation outcomes under stated assumptions, not estimates
+of resistance prevalence or natural sexual reproduction frequency.
 
-Clonal reproduction is a deliberate simplifying assumption of this baseline.
-Lofgren et al. (2022) analysed 260 genomes and reported extensive recombination
-within three primary populations of A. fumigatus, with recombination occurring
-only rarely between those populations. Although dispersal occurs primarily via
-asexual conidia, the species' population history therefore cannot be represented
-fully by an exclusively clonal model.
+## Explore the results
 
-The genomic evidence reflects recombination accumulated over evolutionary
-history. It does not directly specify the fraction of sexual reproduction or a
-per-cycle recombination rate for our simulation. Those parameters would need
-additional justification for a defined ecological setting.
+- [Clonal baseline: assumptions, results and reproduction commands](docs/baseline_persistence.md)
+- [Two-patch dispersal: arrival and persistence](docs/two_population_dispersal.md)
+- [Controlled and stochastic inheritance checks](docs/inheritance_checks.md)
+- [Neutral two-marker experiment: results and figures](docs/neutral_two_markers.md)
 
-Our baseline results describe persistence in a closed, clonal population under the stated
-selection assumptions. They do not yet account for sexual exchange, population
-structure, or linkage between resistance and other fitness-related variants.
-The single marker represents the entire TR34/L98H genotype, so recombination
-cannot separate its promoter and coding components in the baseline model.
+## Quick start
 
-Further extensions could combine occasional sexual reproduction with explicit
-linked variants: separate promoter and L98H states, plus genetic-background
-variants affecting fitness. This would allow us to investigate whether resistance
-remains associated with advantageous or costly backgrounds. Genome-wide evidence
-of recombination does not establish how often the nearby promoter and coding
-alterations are separated; their distance and local recombination behaviour matter.
+Requirements: **SLiM 5.2**, **R**, and Bash for the runners.
+Analysis uses base R; the neutral plotting script uses Cairo PDF output.
 
-Increasing the recombination-rate setting alone while retaining entirely clonal
-reproduction would not implement genetic exchange between parents. A reproductive
-mechanism permitting exchange and explicit genomic variation would be required.
-Separate extensions now explore two-patch dispersal and neutral two-marker
-inheritance, as linked below. The cost and exposure-duration results in this
-README remain results of the original clonal baseline.
+Clone the repository and run commands from its root:
 
-## Experiments and results
+```bash
+git clone https://github.com/alexandranagybio/azole-resistance-persistence.git
+cd azole-resistance-persistence
+```
 
-The main experiment uses seeds 1001–1100 (100 runs per scenario).
-Persistence means that at least one resistant individual remains at the endpoint.
-Both segregating and fixed outcomes count as persistence.
+### Explore the saved neutral experiment
 
-### Cost after withdrawal at generation 50
+```bash
+Rscript analysis/analyse_neutral_two_markers.R
+Rscript analysis/plot_neutral_two_markers.R
+```
 
-| Post-withdrawal cost | Persistence at generation 100 | Persistence at generation 500 | 95% Wilson interval at 500 | Lost / segregating / fixed at 500 | Mean frequency at 500 |
-|---|---:|---:|---|---|---:|
-| 0% | 98% | 76% | 66.8–83.3% | 24 / 52 / 24 | 0.50222 |
-| 1% | 97% | 14% | 8.5–22.1% | 86 / 12 / 2 | 0.05016 |
-| 5% | 88% | 0% | 0–3.7% | 100 / 0 / 0 | 0.00000 |
+The analysis checks all 400 trajectories and writes summaries to
+`data/summaries/neutral_two_markers_100/`.
+Figures are saved as PNG and PDF in `figures/neutral_two_markers_100/`.
+Rerunning these commands replaces the corresponding derived outputs.
 
-![Cost comparison: 100 runs](figures/replicates_100/cost_comparison_500.png)
+### Run one neutral simulation
 
-### Exposure duration at zero cost
-
-All scenarios have a follow-up of 450 reproductive cycles after withdrawal.
-
-| Withdrawal generation | Final generation | Mean frequency at withdrawal | Endpoint persistence | 95% Wilson interval | Lost / segregating / fixed | Mean final frequency |
-|---|---:|---:|---:|---|---|---:|
-| 25 | 475 | 0.25606 | 44% | 34.7–53.8% | 56 / 41 / 3 | 0.19462 |
-| 50 | 500 | 0.51120 | 76% | 66.8–83.3% | 24 / 52 / 24 | 0.50222 |
-| 100 | 550 | 0.86770 | 93% | 86.3–96.6% | 7 / 16 / 77 | 0.86460 |
-
-![Exposure duration: 100 runs](figures/replicates_100/exposure_duration_comparison.png)
-
-![Endpoint persistence with 95% Wilson intervals](figures/replicates_100/persistence_confidence_intervals.png)
-
-Under these settings, longer exposure raises resistance frequency before
-withdrawal and is associated with greater endpoint persistence.
-
-At zero cost, resistance can still be lost through genetic drift.
-At fixation, a fitness cost alone cannot restore susceptible individuals:
-the model has no mutation or migration to reintroduce them.
-
-Wilson intervals describe Monte Carlo uncertainty in the proportion of runs
-retaining resistance under the specified model. They do not capture uncertainty
-in biological parameters or establish real-world prevalence. Observing no
-persistence in 100 runs does not establish a zero persistence probability.
-The intervals are calculated separately for each scenario; they are not intervals
-for differences between scenarios.
-
-### Earlier 20-run learning milestone
-
-The original seeds 1001–1020 and their figures and summaries are preserved.
-These seeds are also the first 20 seeds of the larger experiment, so the two
-experiments are not independent samples.
-
-| Scenario | Persistence with 20 runs | Persistence with 100 runs |
-|---|---:|---:|
-| Cost 0%, generation 500 | 75% | 76% |
-| Cost 1%, generation 500 | 30% | 14% |
-| Cost 5%, generation 500 | 0% | 0% |
-| Withdrawal 25, 450-cycle follow-up | 45% | 44% |
-| Withdrawal 50, 450-cycle follow-up | 75% | 76% |
-| Withdrawal 100, 450-cycle follow-up | 95% | 93% |
-
-The change in the 1% cost estimate illustrates variability from a small number
-of simulation replicates. All 180 original trajectories were reproduced exactly
-within the 100-run experiment.
-
-## Project contents
-
-| Folder | Contents |
-|---|---|
-| `models/` | Short, extended, and exposure-duration SLiM models |
-| `scripts/` | Sequential simulation runner with configurable replicate count |
-| `analysis/` | Base R validation, summaries, confidence intervals, and figures |
-| `data/raw/` | Original 20-run trajectories |
-| `data/replicates_100/` | Main 100-run trajectories and logs |
-| `data/summaries/` | Original and regenerated 20-run summaries |
-| `data/summaries/replicates_100/` | Main 100-run summaries with Wilson intervals |
-| `figures/` | Original 20-run PNG and PDF figures |
-| `figures/replicates_100/` | Main 100-run PNG and PDF figures |
-| `archive/` | Earlier scripts retained as learning history |
-
-The 900 trajectories comprise nine sets of 100 runs. Short runs are prefixes
-of their extended counterparts, and the zero-cost generation-500 experiment
-also appears in the withdrawal-at-50 exposure scenario. These are reproducibility
-comparisons, not additional independent replicates. Scenarios use matching seeds;
-confidence intervals use the 100 outcomes within each scenario.
-
-## Run a simulation
-
-Requirements: SLiM 5.2 and R. Analysis uses base R.
-
-Run commands from the repository root. Replace `slim` with the path to your
-SLiM executable if it is not on PATH.
+With `slim` on PATH:
 
 ```bash
 mkdir -p data/example
 
-slim \
-  -s 1001 \
-  -d COST=0.0 \
-  -d EXPOSURE_END=50 \
-  -d 'OUTFILE="data/example/seed_1001.csv"' \
-  models/09_TR34_L98H_exposure_duration.slim
+slim -s 1001 \
+  -d SEXUAL_FRAC=0.1 \
+  -d RECOMB_FRAC=0.00192 \
+  -d 'OUTFILE="data/example/neutral_seed_1001.csv"' \
+  models/14_neutral_two_marker_population.slim
 ```
 
-The baseline models (scripts 07–09) default to `COST=0.0`.
-Script 09 defaults to withdrawal at generation 50 and ends 450 cycles later.
-It accepts integer withdrawal generations from 2 to 550.
+Replace `slim` with your executable path if needed. Script 14 refuses
+an existing output file; choose a fresh OUTFILE for another run.
 
-Scripts 07 and 08 withdraw exposure at generation 50 and end at generations
-100 and 500, respectively.
-
-Supply a unique OUTFILE for every run. For scripts 07–09, the default output is
-`changing_exposure.csv` in the current working directory, which is replaced
-when another run starts.
-
-## Reproduce analysis and figures
-
-Run from the repository root. For the main 100-run experiment:
+### Regenerate the neutral experiment
 
 ```bash
-Rscript analysis/analyse_results.R data/replicates_100 100 data/summaries/replicates_100
-Rscript analysis/make_figures.R data/replicates_100 100 data/summaries/replicates_100
+SLIM_BIN="$HOME/SLiM/build/slim" \
+  bash scripts/run_neutral_two_markers.sh data/reproduced_neutral_two_markers
 ```
 
-For the original 20-run experiment, use the defaults:
+The runner executes 400 simulations, records parameters and seeds in
+a manifest, and refuses an existing destination.
 
-```bash
-Rscript analysis/analyse_results.R
-Rscript analysis/make_figures.R
-```
+The neutral analysis and plotting scripts currently read the saved
+original experiment paths. They do not automatically analyse an
+alternate runner destination.
 
-The analysis accepts a data folder, replicate count, and summary output folder,
-in that order. It checks generation ranges, frequency bounds, initial frequency,
-agreement between short and extended runs, and matching trajectories before
-withdrawal. For the larger experiment it also checks the original 180 trajectories.
+## Reproducibility and validation
 
-Regenerated summaries use `recomputed_` filenames, preserving the original
-summaries. Rerunning analysis replaces the corresponding regenerated summaries.
-Figure outputs go to `figures/` for 20 runs and `figures/replicates_N/` otherwise,
-where N is the replicate count. Rerunning figure generation replaces those exports.
+- Explicit seeds and parameters are recorded for the experiments.
+- Validation checks cycle records, population sizes, frequency bounds,
+  initial conditions, and relevant inheritance constraints.
+- All 180 original baseline trajectories were reproduced exactly
+  within the larger baseline experiment.
+- All 300 two-patch trajectories were regenerated and matched their
+  original CSV values exactly.
+- All 300 separate-marker clonal trajectories matched the
+  combined-marker model's resistance frequencies.
+- All 400 neutral trajectories passed validation.
+- Software versions are recorded in [software_versions.txt](software_versions.txt).
 
-Figure curves show means across all runs, including runs that lost resistance.
-Mean resistance frequency and persistence are different measures: a mean near
-0.5 does not mean that resistance persists in 50% of runs.
+Trajectory validation and reproducibility assess implementation.
+They do not establish that the biological assumptions are correct.
+The 400-run neutral experiment has been validated but has not yet
+undergone a separate complete regeneration comparison.
 
-## Reproduce all simulations
+## Assumptions and limits
 
-The runner accepts an output folder and replicate count, in that order.
-With SLiM on PATH, reproduce the 100-run experiment into a new destination:
+- Population sizes, selection coefficients, and dispersal rates are
+  illustrative.
+- Zero post-withdrawal cost is the baseline; positive costs are
+  hypothetical sensitivity scenarios.
+- No new mutations occur in these models.
+- A reproductive cycle is not a calendar day.
+- Marker coordinates are abstract.
+- Two-parent inheritance does not explicitly model mating types,
+  tetrads, or the complete fungal life cycle.
+- The neutral model's recombination fraction is cross-specific;
+  transfer to other genetic backgrounds is an assumption.
+- Confidence intervals describe Monte Carlo uncertainty within a
+  scenario, not uncertainty in biological parameters.
 
-```bash
-bash scripts/run_experiments.sh data/reproduced_100 100
-```
+## Biological references
 
-Alternatively, specify the executable:
+- Mellado et al. (2007): TR34/L98H resistance mechanism.
+  https://doi.org/10.1128/AAC.01092-06
+- *Variability in competitive fitness among environmental and clinical
+  azole-resistant Aspergillus fumigatus isolates* (2024).
+  https://doi.org/10.1128/mbio.00263-24
+- Rhodes et al. (2022): environmental and clinical population genomics.
+  https://doi.org/10.1038/s41564-022-01091-2
+- Lofgren et al. (2022): population structure and recombination.
+  https://doi.org/10.1371/journal.pbio.3001890
+- Auxier et al. (2023): meiotic crossovers and two-marker recombination.
+  https://doi.org/10.1371/journal.pbio.3002278
 
-```bash
-SLIM_BIN="$HOME/SLiM/build/slim" bash scripts/run_experiments.sh data/reproduced_100 100
-```
+## Repository layout
 
-The runner executes 900 simulations sequentially and saves CSVs and logs.
-It refuses to reuse an existing output folder. Use a new destination for each
-reproduction run. Seeds start at 1001 and increase with the requested count.
+| Folder | Contents |
+|---|---|
+| `models/` | SLiM models and inheritance checks |
+| `scripts/` | Simulation runners |
+| `analysis/` | R validation, summaries and plotting |
+| `data/` | Saved trajectories, manifests and summaries |
+| `figures/` | PNG and PDF figures |
+| `docs/` | Detailed model explanations and results |
+| `archive/` | Earlier scripts retained as learning history |
 
-Without arguments, it defaults to 20 runs per scenario (180 simulations),
-saved under `data/reproduced/`:
+## Author and license
 
-```bash
-bash scripts/run_experiments.sh
-```
-
-All 180 trajectories regenerated with the updated project models matched the
-original CSVs exactly. The larger experiment passed trajectory validation and
-reproduced those same 180 trajectories exactly.
-
-## Two-patch dispersal extension
-
-An extension explores resistance arrival and persistence between an
-azole-exposed environmental patch and an unexposed patch, using 100
-replicates at each of three clonal dispersal rates.
-
-See the [model, results, figures and reproduction instructions](docs/two_population_dispersal.md).
-
-## Separate markers and inheritance extensions
-
-Script 11 represents TR34 and L98H as separate inherited markers,
-initially present together in the same individuals. Under clonal
-reproduction, all 300 trajectories matched the combined-marker
-two-patch model's resistance frequencies across all 500 cycles.
-No single-marker genotypes arose.
-
-Scripts 12 and 13 check controlled and stochastic two-marker
-inheritance. These are isolated inheritance checks, not full
-population models.
-
-See [inheritance checks and reproduction commands](docs/inheritance_checks.md).
-
-Script 14 models one neutral population of 500 haploids with
-hypothetical two-parent reproduction fractions of 0%, 1%, 10% and
-100%. All genotypes have equal fitness; there is no exposure,
-migration, or new mutation.
-
-Across 100 runs per scenario, single-marker genotypes appeared in
-0, 33, 71 and 100 runs, respectively. All 400 trajectories passed
-validation. Appearance does not imply persistence to the endpoint.
-
-The conditional recombination fraction is literature-informed and
-cross-specific. The two-parent reproduction fractions are sensitivity
-scenarios, not estimates of natural sexual frequency. Mating types,
-tetrads, and the complete fungal life cycle are not represented.
-
-See [the neutral model, results, figures and workflow](docs/neutral_two_markers.md).
-
-## License
+Alexandra Nagy.
 
 MIT License. Copyright (c) 2026 Alexandra Nagy. See [LICENSE](LICENSE).
