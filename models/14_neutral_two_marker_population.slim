@@ -1,0 +1,154 @@
+// Neutral, one-patch, two-marker inheritance model.
+//
+// 500 haploid individuals; initially 50 double-marker carriers.
+// All genotypes have equal fitness.
+// No mutation, migration, or exposure.
+//
+// SEXUAL_FRAC is a hypothetical probability of two-parent inheritance.
+// RECOMB_FRAC is the probability of recombinant marker inheritance
+// conditional on a two-parent event.
+// Default RECOMB_FRAC follows the cross-specific inferred fraction
+// reported by Auxier et al. (2023), doi:10.1371/journal.pbio.3002278.
+//
+// Parents are sampled uniformly; two-parent events use distinct parents.
+// Mating types, tetrads, and the full fungal life cycle are not modelled.
+// Marker coordinates are abstract.
+// Exactly 500 offspring replace the parents each reproductive cycle.
+
+function (float) genotypeFrequencies(o<Subpopulation>$ patch) {
+    inds = patch.individuals;
+    tr = inds.countOfMutationsOfType(m1) > 0;
+    l98 = inds.countOfMutationsOfType(m2) > 0;
+
+    return c(
+        mean(!tr & !l98),
+        mean(tr & !l98),
+        mean(!tr & l98),
+        mean(tr & l98)
+    );
+}
+
+initialize() {
+    initializeSLiMModelType("nonWF");
+
+    defineConstant("N", 500);
+
+    if (!exists("SEXUAL_FRAC"))
+        defineConstant("SEXUAL_FRAC", 0.0);
+    if (!exists("RECOMB_FRAC"))
+        defineConstant("RECOMB_FRAC", 0.00192);
+    if (!exists("OUTFILE"))
+        defineConstant("OUTFILE", "neutral_two_markers.csv");
+
+    if ((SEXUAL_FRAC < 0.0) | (SEXUAL_FRAC > 1.0))
+        stop("SEXUAL_FRAC must be between 0 and 1.");
+
+    if ((RECOMB_FRAC < 0.0) | (RECOMB_FRAC > 0.5))
+        stop("RECOMB_FRAC must be between 0 and 0.5.");
+
+    if (fileExists(OUTFILE))
+        stop("OUTFILE already exists; choose a fresh path.");
+
+    initializeMutationType("m1", 1.0, "f", 0.0);
+    initializeMutationType("m2", 1.0, "f", 0.0);
+    m1.convertToSubstitution = F;
+    m2.convertToSubstitution = F;
+
+    initializeGenomicElementType("g1", c(m1, m2), c(1.0, 1.0));
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    sim.addSubpop("p1", N);
+
+    carriers = sample(p1.individuals, 50);
+    tr = carriers[0].haplosomes.addNewDrawnMutation(m1, 50000);
+    l98 = carriers[0].haplosomes.addNewDrawnMutation(m2, 50650);
+    carriers[1:49].haplosomes.addMutations(c(tr, l98));
+
+    writeFile(OUTFILE,
+        "generation,population_size,wt,tr34_only,l98h_only,double," +
+        "tr34_frequency,l98h_frequency");
+
+    catn("Two-parent fraction: " + SEXUAL_FRAC);
+    catn("Conditional recombination fraction: " + RECOMB_FRAC);
+}
+
+// Generate the entire offspring cohort once per cycle.
+// Reproduction begins at cycle 2; cycle 1 records the founders.
+2:500 reproduction(p1) {
+    if (individual.index != 0)
+        return;
+
+    parents = p1.individuals;
+
+    if (size(parents) != N)
+        stop("Unexpected parental population size.");
+
+    for (i in seqLen(N)) {
+        if (runif(1) < SEXUAL_FRAC) {
+            pair = sample(parents, 2, replace=F);
+            breaks = integer(0);
+
+            if (runif(1) < RECOMB_FRAC)
+                breaks = 50325;
+
+            p1.addRecombinant(
+                pair[0].haplosomes,
+                pair[1].haplosomes,
+                breaks,
+                NULL, NULL, NULL,
+                parent1=pair[0],
+                parent2=pair[1],
+                randomizeStrands=T
+            );
+        } else {
+            parent = sample(parents, 1);
+            p1.addCloned(parent);
+        }
+    }
+}
+
+// Founders and newly produced offspring have age 0.
+// Older parents die after producing the next cohort.
+survival() {
+    return individual.age == 0;
+}
+
+1:500 late() {
+    if (p1.individualCount != N)
+        stop("Population size is not 500 after survival.");
+
+    if (any(p1.individuals.age != 0))
+        stop("Parents survived into the offspring cohort.");
+
+    f = genotypeFrequencies(p1);
+
+    if (abs(sum(f) - 1.0) > 1e-10)
+        stop("Genotype frequencies do not sum to one.");
+
+    // Starting with WT and double carriers, single-marker
+    // genotypes require both two-parent inheritance and recombination.
+    if ((SEXUAL_FRAC == 0.0) | (RECOMB_FRAC == 0.0)) {
+        if ((f[1] > 0.0) | (f[2] > 0.0))
+            stop("Unexpected single-marker genotype.");
+    }
+
+    trFrequency = f[1] + f[3];
+    l98Frequency = f[2] + f[3];
+
+    writeFile(OUTFILE,
+        paste(c(sim.cycle, p1.individualCount, f,
+                trFrequency, l98Frequency), sep=","),
+        append=T);
+
+    if (sim.cycle == 500) {
+        catn("Final WT, TR34-only, L98H-only, double: " +
+            paste(f, sep=", "));
+        catn("Population and inheritance checks passed.");
+        sim.simulationFinished();
+    }
+}
