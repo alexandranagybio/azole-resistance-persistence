@@ -98,3 +98,62 @@ Rscript analysis/check_neutral_two_markers.R
 ```
 
 Generated diagnostic CSVs are ignored by Git.
+
+
+## Replicated neutral experiment
+
+We ran 100 simulations per hypothetical two-parent fraction, using
+seeds 1001–1100 and a conditional recombination fraction of 0.00192.
+All 400 trajectories passed validation.
+
+| Two-parent fraction | Runs with single-marker appearance | 95% Wilson interval | Median first cycle among observed runs |
+|---|---:|---:|---:|
+| 0% | 0/100 | 0–3.70% | Not observed |
+| 1% | 33/100 | 24.56–42.70% | 110 |
+| 10% | 71/100 | 61.46–78.99% | 29 |
+| 100% | 100/100 | 96.30–100% | 5 |
+
+Appearance means presence at least once, not persistence to cycle 500.
+Medians exclude runs without appearance. The clonal control cannot
+produce single-marker genotypes under the model assumptions.
+
+Higher hypothetical two-parent fractions increased observed marker
+separation. These scenarios do not estimate natural sexual frequency.
+
+At 100% two-parent reproduction, both markers persisted in 19 runs,
+but double carriers persisted in 18. One run therefore retained both
+markers exclusively in separate individuals.
+
+All genotypes have equal fitness. Differences between scenario means
+do not demonstrate a selective advantage.
+
+Marker association is D = f_double - p_TR34 * p_L98H.
+Loss or fixation of either marker also makes D zero, so declining D
+alone does not demonstrate recombination.
+
+### Figures
+
+Points show appearance percentages; bars show 95% Wilson intervals.
+The clonal interval summarises replicate counts, although absence
+of marker separation is guaranteed by the model in that scenario.
+
+![Single-marker appearance](../figures/neutral_two_markers_100/single_marker_appearance.png)
+
+Curves show mean genotype frequencies across all 100 runs, including
+losses and fixation.
+
+![Mean genotype trajectories](../figures/neutral_two_markers_100/mean_genotype_trajectories.png)
+
+### Replicated workflow
+
+Run scripts/run_neutral_two_markers.sh with Bash and SLIM_BIN pointing
+to the SLiM executable. The default destination is
+data/neutral_two_markers_100; an existing destination is refused.
+The runner records parameters and seeds in manifest.csv.
+
+Then run analysis/analyse_neutral_two_markers.R and
+analysis/plot_neutral_two_markers.R with Rscript from the project root.
+Both use the original experiment paths.
+
+An optional runner argument selects a fresh output directory.
+The analysis scripts do not automatically follow that alternate path.

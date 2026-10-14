@@ -1,0 +1,5 @@
+"sexual_fraction","runs","singles_ever","singles_ever_percent","ci_lower_percent","ci_upper_percent","median_first_cycle_if_observed","tr34_present_at_500","l98h_present_at_500","both_markers_present_at_500","double_carriers_present_at_500","mean_final_tr34","mean_final_l98h","mean_final_D"
+0,100,0,0,0,3.69934982069857,NA,22,22,22,22,0.09888,0.09888,0.02867992
+0.01,100,33,33,24.563122734128,42.6946562049095,110,17,17,17,17,0.08824,0.08824,0.03005928
+0.1,100,71,71,61.4611088244289,78.9851642508777,29,21,20,19,19,0.09932,0.096,0.02866356
+1,100,100,100,96.3006501793014,100,5,24,23,19,18,0.1373,0.12714,0.01621812
