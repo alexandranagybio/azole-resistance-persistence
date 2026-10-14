@@ -1,0 +1,100 @@
+// Controlled inheritance test for two linked markers.
+// Uses nonWF solely to construct offspring explicitly.
+//
+// Two haploid parents: wild type and TR34/L98H.
+// p2 receives two offspring without a crossover.
+// p3 receives two offspring with a forced crossover between markers.
+//
+// Starting parental strand is controlled, not randomly sampled.
+// This is not a complete model of fungal meiosis.
+// Positions are abstract; no natural crossover rate is estimated.
+
+initialize() {
+    initializeSLiMModelType("nonWF");
+
+    initializeMutationType("m1", 1.0, "f", 0.0);
+    initializeMutationType("m2", 1.0, "f", 0.0);
+    m1.convertToSubstitution = F;
+    m2.convertToSubstitution = F;
+
+    initializeGenomicElementType("g1", c(m1, m2), c(1.0, 1.0));
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    sim.addSubpop("p1", 2);
+    sim.addSubpop("p2", 0);
+    sim.addSubpop("p3", 0);
+
+    // Parent 0 stays wild type; parent 1 receives both markers.
+    resistant = p1.individuals[1];
+    resistant.haplosomes.addNewDrawnMutation(m1, 50000);
+    resistant.haplosomes.addNewDrawnMutation(m2, 50100);
+}
+
+2 reproduction(p1) {
+    // Execute the controlled cross once, using both founders.
+    if (individual.index != 0)
+        return;
+
+    wt = p1.individuals[0];
+    resistant = p1.individuals[1];
+
+    w = wt.haplosomes;
+    r = resistant.haplosomes;
+
+    // No crossover: copy the initial strand throughout.
+    p2.addRecombinant(w, r, integer(0), NULL, NULL, NULL,
+        parent1=wt, parent2=resistant, randomizeStrands=F);
+
+    p2.addRecombinant(r, w, integer(0), NULL, NULL, NULL,
+        parent1=resistant, parent2=wt, randomizeStrands=F);
+
+    // Forced crossover at 50050, between the marker positions.
+    // WT first, resistant second: inherit L98H only.
+    p3.addRecombinant(w, r, 50050, NULL, NULL, NULL,
+        parent1=wt, parent2=resistant, randomizeStrands=F);
+
+    // Resistant first, WT second: inherit TR34 only.
+    p3.addRecombinant(r, w, 50050, NULL, NULL, NULL,
+        parent1=resistant, parent2=wt, randomizeStrands=F);
+}
+
+2 late() {
+    for (patch in c(p2, p3)) {
+        inds = patch.individuals;
+        tr = inds.countOfMutationsOfType(m1) > 0;
+        l98 = inds.countOfMutationsOfType(m2) > 0;
+
+        counts = c(
+            sum(!tr & !l98),
+            sum(tr & !l98),
+            sum(!tr & l98),
+            sum(tr & l98)
+        );
+
+        if (patch.id == 2) {
+            expected = c(1, 0, 0, 1);
+            label = "No crossover";
+        }
+        else {
+            expected = c(0, 1, 1, 0);
+            label = "Forced crossover";
+        }
+
+        if (patch.individualCount != 2)
+            stop("Unexpected offspring count.");
+
+        if (any(counts != expected))
+            stop("Inheritance check failed: " + label);
+
+        catn(label + ": WT, TR34-only, L98H-only, double = " +
+            paste(counts, sep=","));
+    }
+
+    catn("Controlled inheritance check passed.");
+    sim.simulationFinished();
+}

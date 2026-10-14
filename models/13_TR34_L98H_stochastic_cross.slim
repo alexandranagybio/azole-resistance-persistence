@@ -1,0 +1,138 @@
+// Stochastic inheritance check: TR34-only x L98H-only.
+//
+// Reference: Auxier et al. (2023)
+// doi:10.1371/journal.pbio.3002278
+//
+// RECOMB_FRAC defaults to the study's inferred total recombinant
+// fraction, 0.192% = 0.00192, for its experimental cross.
+//
+// Each simulated offspring is an independent haploid inheritance draw.
+// A recombinant draw switches parental strands once between markers.
+// This is an effective two-marker model, not explicit tetrad meiosis.
+// It does not estimate the frequency of sexual reproduction in nature.
+//
+// Markers are 650 bp apart, following the reported separation.
+// Absolute coordinates and the chosen crossover midpoint are abstract.
+// No mutation, selection, migration, or population evolution.
+
+initialize() {
+    initializeSLiMModelType("nonWF");
+
+    if (!exists("RECOMB_FRAC"))
+        defineConstant("RECOMB_FRAC", 0.00192);
+    if (!exists("N_OFFSPRING"))
+        defineConstant("N_OFFSPRING", 100000);
+    if (!exists("OUTFILE"))
+        defineConstant("OUTFILE", "stochastic_cross.csv");
+
+    if ((RECOMB_FRAC < 0.0) | (RECOMB_FRAC > 0.5))
+        stop("RECOMB_FRAC must be between 0 and 0.5.");
+
+    if ((N_OFFSPRING < 1) |
+        (N_OFFSPRING != asInteger(N_OFFSPRING)))
+        stop("N_OFFSPRING must be a positive integer.");
+
+    if (fileExists(OUTFILE))
+        stop("OUTFILE already exists; choose a new output path.");
+
+    initializeMutationType("m1", 1.0, "f", 0.0);
+    initializeMutationType("m2", 1.0, "f", 0.0);
+    m1.convertToSubstitution = F;
+    m2.convertToSubstitution = F;
+
+    initializeGenomicElementType("g1", c(m1, m2), c(1.0, 1.0));
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    sim.addSubpop("p1", 2);
+    sim.addSubpop("p2", 0);
+
+    // Parent 0 carries TR34 only.
+    p1.individuals[0].haplosomes.addNewDrawnMutation(m1, 50000);
+
+    // Parent 1 carries L98H only.
+    p1.individuals[1].haplosomes.addNewDrawnMutation(m2, 50650);
+}
+
+2 reproduction(p1) {
+    if (individual.index != 0)
+        return;
+
+    trParent = p1.individuals[0];
+    l98Parent = p1.individuals[1];
+    recombinantDraws = 0;
+
+    for (i in seqLen(N_OFFSPRING)) {
+        breaks = integer(0);
+
+        if (runif(1) < RECOMB_FRAC) {
+            breaks = 50325;
+            recombinantDraws = recombinantDraws + 1;
+        }
+
+        // Randomly choose which parental strand is copied first.
+        p2.addRecombinant(
+            trParent.haplosomes, l98Parent.haplosomes, breaks,
+            NULL, NULL, NULL,
+            parent1=trParent, parent2=l98Parent,
+            randomizeStrands=T
+        );
+    }
+
+    sim.setValue("recombinant_draws", recombinantDraws);
+}
+
+2 late() {
+    inds = p2.individuals;
+    tr = inds.countOfMutationsOfType(m1) > 0;
+    l98 = inds.countOfMutationsOfType(m2) > 0;
+
+    counts = c(
+        sum(!tr & !l98),
+        sum(tr & !l98),
+        sum(!tr & l98),
+        sum(tr & l98)
+    );
+
+    labels = c("wild_type", "TR34_only", "L98H_only", "double");
+
+    expected = c(
+        RECOMB_FRAC / 2.0,
+        (1.0 - RECOMB_FRAC) / 2.0,
+        (1.0 - RECOMB_FRAC) / 2.0,
+        RECOMB_FRAC / 2.0
+    );
+
+    if (p2.individualCount != N_OFFSPRING)
+        stop("Unexpected offspring count.");
+
+    if (sum(counts) != N_OFFSPRING)
+        stop("Genotype counts do not sum to offspring count.");
+
+    if ((counts[0] + counts[3]) !=
+        sim.getValue("recombinant_draws"))
+        stop("Genotypes do not match the recombinant draws.");
+
+    writeFile(OUTFILE,
+        "genotype,count,frequency,expected_frequency");
+
+    for (i in seqAlong(counts)) {
+        frequency = counts[i] / N_OFFSPRING;
+
+        writeFile(OUTFILE,
+            labels[i] + "," + counts[i] + "," +
+            frequency + "," + expected[i],
+            append=T);
+
+        catn(labels[i] + ": " + counts[i] +
+            " offspring; frequency=" + frequency);
+    }
+
+    catn("Recombinant offspring: " + (counts[0] + counts[3]));
+    catn("Structural inheritance checks passed.");
+    sim.simulationFinished();
+}
