@@ -59,6 +59,15 @@ literally insert promoter sequence or substitute nucleotides.
 These are simulation outcomes under stated assumptions, not estimates
 of resistance prevalence or natural sexual reproduction frequency.
 
+### Resistance frequency after withdrawal
+
+![Mean resistance frequency under three post-withdrawal costs](figures/replicates_100/cost_comparison_500.png)
+
+Clonal baseline: exposure ends at cycle 50. Curves show mean resistance
+frequency across 100 runs per scenario, including losses and fixation.
+Zero cost is the baseline; 1% and 5% costs are hypothetical.
+Mean frequency is different from the proportion of runs retaining resistance.
+
 ## Explore the results
 
 - [Clonal baseline: assumptions, results and reproduction commands](docs/baseline_persistence.md)
