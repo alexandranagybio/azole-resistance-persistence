@@ -4,7 +4,7 @@ An educational SLiM 5.2 project exploring how selection, genetic drift,
 and exposure duration affect the persistence of an existing resistance
 genotype after azole withdrawal.
 
-## Model
+## Clonal baseline model
 
 The population contains 500 clonal haploid individuals, initially including
 50 resistant individuals (resistance frequency 0.1).
@@ -69,13 +69,13 @@ history. It does not directly specify the fraction of sexual reproduction or a
 per-cycle recombination rate for our simulation. Those parameters would need
 additional justification for a defined ecological setting.
 
-Our results describe persistence in a closed, clonal population under the stated
+Our baseline results describe persistence in a closed, clonal population under the stated
 selection assumptions. They do not yet account for sexual exchange, population
 structure, or linkage between resistance and other fitness-related variants.
 The single marker represents the entire TR34/L98H genotype, so recombination
-cannot separate its promoter and coding components in the current model.
+cannot separate its promoter and coding components in the baseline model.
 
-A future extension could introduce occasional sexual reproduction and explicit
+Further extensions could combine occasional sexual reproduction with explicit
 linked variants: separate promoter and L98H states, plus genetic-background
 variants affecting fitness. This would allow us to investigate whether resistance
 remains associated with advantageous or costly backgrounds. Genome-wide evidence
@@ -85,9 +85,9 @@ alterations are separated; their distance and local recombination behaviour matt
 Increasing the recombination-rate setting alone while retaining entirely clonal
 reproduction would not implement genetic exchange between parents. A reproductive
 mechanism permitting exchange and explicit genomic variation would be required.
-Population structure and migration could then be introduced in later versions.
-These are proposed extensions; the current simulations and reported results
-remain the clonal baseline.
+Separate extensions now explore two-patch dispersal and neutral two-marker
+inheritance, as linked below. The cost and exposure-duration results in this
+README remain results of the original clonal baseline.
 
 ## Experiments and results
 
@@ -191,14 +191,14 @@ slim \
   models/09_TR34_L98H_exposure_duration.slim
 ```
 
-All models default to `COST=0.0`.
+The baseline models (scripts 07–09) default to `COST=0.0`.
 Script 09 defaults to withdrawal at generation 50 and ends 450 cycles later.
 It accepts integer withdrawal generations from 2 to 550.
 
 Scripts 07 and 08 withdraw exposure at generation 50 and end at generations
 100 and 500, respectively.
 
-Supply a unique OUTFILE for every run. The default output is
+Supply a unique OUTFILE for every run. For scripts 07–09, the default output is
 `changing_exposure.csv` in the current working directory, which is replaced
 when another run starts.
 
@@ -269,6 +269,36 @@ azole-exposed environmental patch and an unexposed patch, using 100
 replicates at each of three clonal dispersal rates.
 
 See the [model, results, figures and reproduction instructions](docs/two_population_dispersal.md).
+
+## Separate markers and inheritance extensions
+
+Script 11 represents TR34 and L98H as separate inherited markers,
+initially present together in the same individuals. Under clonal
+reproduction, all 300 trajectories matched the combined-marker
+two-patch model's resistance frequencies across all 500 cycles.
+No single-marker genotypes arose.
+
+Scripts 12 and 13 check controlled and stochastic two-marker
+inheritance. These are isolated inheritance checks, not full
+population models.
+
+See [inheritance checks and reproduction commands](docs/inheritance_checks.md).
+
+Script 14 models one neutral population of 500 haploids with
+hypothetical two-parent reproduction fractions of 0%, 1%, 10% and
+100%. All genotypes have equal fitness; there is no exposure,
+migration, or new mutation.
+
+Across 100 runs per scenario, single-marker genotypes appeared in
+0, 33, 71 and 100 runs, respectively. All 400 trajectories passed
+validation. Appearance does not imply persistence to the endpoint.
+
+The conditional recombination fraction is literature-informed and
+cross-specific. The two-parent reproduction fractions are sensitivity
+scenarios, not estimates of natural sexual frequency. Mating types,
+tetrads, and the complete fungal life cycle are not represented.
+
+See [the neutral model, results, figures and workflow](docs/neutral_two_markers.md).
 
 ## License
 
