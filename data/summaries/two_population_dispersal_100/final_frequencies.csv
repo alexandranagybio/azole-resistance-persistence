@@ -1,0 +1,4 @@
+"migration_rate","total_runs","globally_lost","globally_segregating","globally_fixed","mean_final_p1","mean_final_p2","mean_final_total"
+0,100,26,74,0,0.4843,0,0.24215
+0.001,100,25,75,0,0.37258,0.13542,0.254
+0.01,100,45,55,0,0.21132,0.21384,0.21258

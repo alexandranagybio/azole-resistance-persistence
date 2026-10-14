@@ -1,0 +1,4 @@
+"migration_rate","total_runs","first_arrival_by_cycle_50","first_arrival_after_cycle_50","never_arrived","median_first_arrival_if_arrived"
+0,100,0,0,100,NA
+0.001,100,99,0,1,13
+0.01,100,100,0,0,3

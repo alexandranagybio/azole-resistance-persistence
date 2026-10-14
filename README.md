@@ -262,6 +262,14 @@ All 180 trajectories regenerated with the updated project models matched the
 original CSVs exactly. The larger experiment passed trajectory validation and
 reproduced those same 180 trajectories exactly.
 
+## Two-patch dispersal extension
+
+An extension explores resistance arrival and persistence between an
+azole-exposed environmental patch and an unexposed patch, using 100
+replicates at each of three clonal dispersal rates.
+
+See the [model, results, figures and reproduction instructions](docs/two_population_dispersal.md).
+
 ## License
 
 MIT License. Copyright (c) 2026 Alexandra Nagy. See [LICENSE](LICENSE).

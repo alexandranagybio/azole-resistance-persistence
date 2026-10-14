@@ -1,0 +1,118 @@
+// Educational two-patch model of TR34/L98H persistence and dispersal.
+//
+// Two environmental patches, each containing 500 clonal haploids.
+// Initially, 50 individuals in p1 carry the complete resistance marker.
+// p1 is exposed until EXPOSURE_END; p2 is never exposed.
+// Exposure advantage +0.05; unexposed fitness effect -COST.
+// No new mutations or recombination.
+//
+// MIGRATION_RATE is the probability that an offspring in either patch
+// derives from a parent in the other patch (symmetric WF migration).
+// This represents successful clonal dispersal and establishment.
+// Patch sizes, selection and migration rates are illustrative.
+// These patches do not directly represent the paper's genetic clades.
+//
+// Follow-up lasts 450 cycles after withdrawal.
+// Each cycle is a reproductive cycle, not a calendar day.
+// Chromosome length and marker position remain abstract.
+
+initialize() {
+    if (!exists("OUTFILE"))
+        defineConstant("OUTFILE", "two_populations.csv");
+    if (!exists("COST"))
+        defineConstant("COST", 0.0);
+    if (!exists("EXPOSURE_END"))
+        defineConstant("EXPOSURE_END", 50);
+    if (!exists("MIGRATION_RATE"))
+        defineConstant("MIGRATION_RATE", 0.0);
+
+    if ((COST < 0.0) | (COST >= 1.0))
+        stop("COST must be at least 0 and less than 1.");
+
+    if ((MIGRATION_RATE < 0.0) | (MIGRATION_RATE > 1.0))
+        stop("MIGRATION_RATE must be between 0 and 1.");
+
+    if ((EXPOSURE_END < 2) | (EXPOSURE_END > 550) |
+        (EXPOSURE_END != asInteger(EXPOSURE_END)))
+        stop("EXPOSURE_END must be an integer from 2 to 550.");
+
+    defineConstant("END_GEN", EXPOSURE_END + 450);
+
+    initializeMutationType("m1", 1.0, "f", 0.05);
+    m1.convertToSubstitution = F;
+    initializeGenomicElementType("g1", m1, 1.0);
+
+    initializeChromosome(1, type="H");
+    initializeGenomicElement(g1, 0, 99999);
+    initializeMutationRate(0.0);
+    initializeRecombinationRate(0.0);
+}
+
+1 early() {
+    sim.addSubpop("p1", 500);
+    sim.addSubpop("p2", 500);
+
+    p1.setCloningRate(1.0);
+    p2.setCloningRate(1.0);
+
+    // Destination first, source population inside the parentheses.
+    p1.setMigrationRates(p2, MIGRATION_RATE);
+    p2.setMigrationRates(p1, MIGRATION_RATE);
+}
+
+// p2 is unexposed throughout; override the marker's default effect.
+mutationEffect(m1, p2) {
+    return 1.0 - COST;
+}
+
+// Introduce resistance after cycle 1 reproduction, only in p1.
+1 late() {
+    carriers = sample(p1.individuals, 50);
+    allele = carriers[0].haplosomes.addNewDrawnMutation(m1, 50000);
+    carriers[1:49].haplosomes.addMutations(allele);
+
+    writeFile(OUTFILE, "generation,frequency_p1,frequency_p2,frequency_total");
+
+    catn("Migration rate: " + MIGRATION_RATE);
+    catn("Cost when unexposed: " + COST);
+    catn("Exposure ends at cycle: " + EXPOSURE_END);
+    catn("Simulation ends at cycle: " + END_GEN);
+}
+
+// Withdrawal follows reproduction in the specified cycle.
+// The new effect applies to parental reproduction from the next cycle.
+1:1000 late() {
+    if (sim.cycle == EXPOSURE_END) {
+        muts = sim.mutationsOfType(m1);
+        if (size(muts) > 0)
+            muts.setSelectionCoeff(-COST);
+        catn("Exposure withdrawn at cycle " + sim.cycle);
+    }
+}
+
+// Record both patch frequencies and the overall frequency.
+1:1000 late() {
+    muts = sim.mutationsOfType(m1);
+
+    if (size(muts) == 0) {
+        f1 = 0.0;
+        f2 = 0.0;
+        total = 0.0;
+    }
+    else {
+        f1 = sim.mutationFrequencies(p1, muts);
+        f2 = sim.mutationFrequencies(p2, muts);
+        total = sim.mutationFrequencies(NULL, muts);
+    }
+
+    writeFile(OUTFILE,
+        sim.cycle + "," + f1 + "," + f2 + "," + total,
+        append=T);
+
+    if (sim.cycle == END_GEN) {
+        catn("Final frequencies: p1=" + f1 + "; p2=" + f2);
+        catn("Final population sizes: " +
+            p1.individualCount + ", " + p2.individualCount);
+        sim.simulationFinished();
+    }
+}
